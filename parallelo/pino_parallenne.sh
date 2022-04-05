@@ -10,7 +10,7 @@
     # termini quando tutti i processi in background sono terminati
     # garantisca la terminazione di tutti i processi in background se viene terminato dall'esterno il processo parallenne
 
-test $# -lt 1 && ( echo "Usage: parallenne [commands...]"; exit 1 )
+test $# -lt 1 && { echo "Usage: parallenne [commands...]"; exit 1; }
 
 LOGFILE="./parallenne.log"
 
