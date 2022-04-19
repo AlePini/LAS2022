@@ -1,0 +1,15 @@
+[Unit]
+Description=logging for sd.log
+Documentation=man:rsyslogd
+DefaultDependencies=no
+Requires=rsyslog.service
+After=local-fs.target network-pre.target apparmor.service systemd-sysctl.service systemd-modules-load.service rsyslog.service
+Before=shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/vagrant/mylog/enable-mylog
+ExecStop=/home/vagrant/mylog/disable-mylog
+RemainAfterExit=true
+TimeoutStartSec=5min

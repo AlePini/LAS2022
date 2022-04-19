@@ -1,0 +1,8 @@
+#!/bin/bash
+
+while sleep 10; do
+    RAM=$(free | grep "Mem:" | awk '{ print $4 }') # Free RAM
+    CPU=$(ps axo user,pid,comm --sort -%cpu | awk 'NR==2') # which process is using more CPU
+    
+    logger -p local1.info "RAM: $RAM %CPU: $CPU"
+done

@@ -1,0 +1,12 @@
+[Unit]
+Description=monitor
+DefaultDependencies=no
+BindsTo=mylog.service
+After=local-fs.target network-pre.target apparmor.service systemd-sysctl.service systemd-modules-load.service mylog.service
+Before=shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=simple
+ExecStart=/home/vagrant/mylog/mymon
+ExecStop=kill -SIGKILL $MAINPID

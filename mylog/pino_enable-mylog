@@ -1,0 +1,9 @@
+#!/bin/bash
+
+TMP=$(mktemp)
+
+echo -e "local1.=info\t/var/log/sd.log" > $TMP
+sudo cp $TMP /etc/rsyslog.d/mylog.conf
+sudo systemctl restart rsyslog.service
+
+rm $TMP

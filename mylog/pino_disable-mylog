@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm /etc/rsyslog.d/mylog.conf
+sudo systemctl restart rsyslog
