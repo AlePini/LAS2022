@@ -1,0 +1,116 @@
+---
+- hosts: all
+  tasks:
+    # ES 6 - aggiungere utente Estensione (tanto sono solo righe aggiunte rispetto a quello su virutale)
+    - name: "Add the user 'johnd'"
+      become: yes
+      ansible.builtin.user:
+        name: johnd
+        comment: John Doe
+        create_home: yes
+        # To create a password use this
+        # $ ansible all -i localhost, -m debug -a "msg={{ 'mypassword' | password_hash('sha512', 'mysecretsalt') }}"
+        password: "$6$mysecretsalt$qJbapG68nyRab3gxvKWPUcs2g3t0oMHSHMnSKecYNpSi3CuZm.GbBqXO8BE6EI6P1JUefhA0qvD7b5LSh./PU1"
+        expires: "{{ lookup('pipe', 'date -u --date=\"now + 180 days\" +%s') }}"
+
+    # ES 7 - login con chiave
+    - name: Upload ssh public key in Authorized_key
+      become: yes
+      ansible.posix.authorized_key:
+        user: johnd
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa_ansible.pub') }}"
+
+    # ES 8 - installazione di uno script
+    - name: Copy script
+      ansible.builtin.copy:
+        src: /home/pini/Projects/LAS/ansible/copy.sh
+        dest: /home/vagrant/copy.sh
+        mode: '0755'
+
+    - name: Copy config file 
+      ansible.builtin.copy:
+        src: /home/pini/Projects/LAS/ansible/save.list
+        dest: /home/vagrant/save.list
+        mode: '0644'
+
+    # ES 8 - Estensione
+    - name: Copy script in /usr/bin
+      become: yes
+      ansible.builtin.copy:
+        src: /home/pini/Projects/LAS/ansible/copy.sh
+        dest: /usr/bin/copy.sh
+        # owner and group kinda overkill
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Copy config file in /etc
+      become: yes
+      ansible.builtin.copy:
+        src: /home/pini/Projects/LAS/ansible/save.list
+        dest: /etc/save.list
+        owner: root
+        group: root
+    
+    # ES 9 - modifica di un file
+    - name: Ensure passwd is backed up
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/save.list
+        line: /etc/passwd
+        mode: '0600'
+
+    # ES 9 - Estensione 1
+    - name: Ensure sensitive files are not backed up
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/save.list
+        state: absent
+        regexp: "^/etc/(passwd|shadow|group)"
+
+    # ES 9 - estensione 2
+    - name: Add johnd as sudoers
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers
+        regexp: '^johnd'
+        insertafter: '^root\sALL=\(ALL:ALL\)\sALL'
+        line: 'johnd  ALL=(ALL) NOPASSWD:ALL'
+        validate: 'visudo -cf %s'
+
+    # ES 10 - pianificazione periodica
+    - name: schedule backup
+      ansible.builtin.cron:
+        name: "backup selected files"
+        minute: "*/2"
+        weekday: "1-5"
+        month: "1-7,9-12"
+        job: "/usr/bin/copy.sh 2>/dev/null >/dev/null"
+
+    # ES 10 - estensione rimozione
+    - name: remove schedule backup
+      ansible.builtin.cron:
+        state: absent
+        name: "backup selected files"
+        minute: "*/2"
+        weekday: "1-5"
+        month: "1-7,9-12"
+        job: "/usr/bin/copy.sh 2>/dev/null >/dev/null"
+
+    # ES 11 - gestione di systemd
+    - name: Guarantee rsyslog is started
+      ansible.builtin.systemd:
+        state: started
+        name: rsyslog.service
+
+    # ES 11 - estensione
+    - name: Guarantee atd is installed
+      become: yes
+      ansible.builtin.package:
+        state: present
+        name: at
+    - name: Guarantee atd is started
+      ansible.builtin.systemd:
+        state: started
+        name: atd.service
